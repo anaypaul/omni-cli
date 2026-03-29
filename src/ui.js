@@ -1,6 +1,6 @@
 import * as readline from 'node:readline/promises';
 import { join } from 'node:path';
-import { ClaudeAgent, CodexAgent } from './agents/index.js';
+import { ClaudeAgent, CodexAgent, GeminiAgent } from './agents/index.js';
 import { Orchestrator } from './orchestrator.js';
 import { registerBuiltinRoutes, registerRoute, dispatch, parseREPLInput } from './dispatcher.js';
 import * as c from './colors.js';
@@ -11,9 +11,11 @@ function printBanner() {
   console.log(c.dim('  Routes:'));
   console.log(`    ${c.claude('@claude')} <prompt>  Send to Claude Code`);
   console.log(`    ${c.codex('@codex')}  <prompt>  Send to Codex CLI`);
+  console.log(`    ${c.gemini('@gemini')} <prompt>  Send to Gemini CLI`);
   console.log(`    ${c.system('@plan')}   <prompt>  Codex plans, Claude implements`);
   console.log(`    ${c.system('@reverse')}<prompt>  Claude plans, Codex implements`);
   console.log(`    ${c.system('@both')}   <prompt>  Ask both agents`);
+  console.log(`    ${c.system('@all')}    <prompt>  Ask all agents in parallel`);
   console.log(`    ${c.system('@eval')}   <skill>   Run eval suite for a skill`);
   console.log(`    ${c.system('@auto')}   <task>    Auto-select best skill, implement`);
   console.log(`    ${c.dim('sessions')}          Show active session IDs`);
@@ -27,6 +29,7 @@ function printSessions(orch) {
   console.log(c.bold('\n  Active Sessions:'));
   console.log(`    Claude:  ${s.claude ? c.claude(s.claude) : c.dim('(none)')}`);
   console.log(`    Codex:   ${s.codex ? c.codex(s.codex) : c.dim('(none)')}`);
+  console.log(`    Gemini:  ${s.gemini ? c.gemini(s.gemini) : c.dim('(none)')}`);
   console.log('');
 }
 
@@ -35,6 +38,7 @@ function sessionIndicator(orch) {
   const parts = [];
   if (s.claude) parts.push('C');
   if (s.codex) parts.push('X');
+  if (s.gemini) parts.push('G');
   return parts.length > 0 ? `[${parts.join('+')}] ` : '';
 }
 
@@ -112,7 +116,8 @@ export async function startUI(options = {}) {
   const cwd = options.cwd || process.cwd();
   const claude = new ClaudeAgent({ cwd });
   const codex = new CodexAgent({ cwd });
-  const orch = new Orchestrator({ claude, codex });
+  const gemini = new GeminiAgent({ cwd });
+  const orch = new Orchestrator({ claude, codex, gemini });
 
   registerBuiltinRoutes();
   registerEvalRoutes(cwd);
