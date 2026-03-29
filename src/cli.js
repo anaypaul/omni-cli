@@ -8,7 +8,7 @@
  *   auto "<task>"                   Eval candidate skills, pick best, implement
  */
 import { join } from 'node:path';
-import { ClaudeAgent, CodexAgent } from './agents/index.js';
+import { ClaudeAgent, CodexAgent, GeminiAgent } from './agents/index.js';
 import { Orchestrator } from './orchestrator.js';
 import { loadAllSkills, loadSkill, renderPrompt } from './skills/loader.js';
 import { runEvalSuite } from './evals/runner.js';
@@ -75,7 +75,9 @@ async function cmdSkills(args) {
   }
   console.log(c.bold('\n  Available Skills\n'));
   for (const s of skills) {
-    const agent = s.targetAgent === 'claude' ? c.claude(s.targetAgent) : c.codex(s.targetAgent);
+    const agentColorFn = { claude: c.claude, codex: c.codex, gemini: c.gemini };
+    const colorFn = agentColorFn[s.targetAgent] || c.dim;
+    const agent = colorFn(s.targetAgent);
     console.log(`  ${c.bold(s.id)}  ${c.dim(s.name)}  → ${agent}`);
     if (s.defaultEvalSuite) {
       console.log(`    ${c.dim(`eval suite: ${s.defaultEvalSuite}`)}`);
@@ -120,9 +122,10 @@ async function cmdImplement(args, cwd) {
 
   const orch = makeOrchestrator(cwd);
 
-  console.log(c.header(skill.targetAgent === 'claude' ? 'Claude' : 'Codex', skill.name));
-  const agent = skill.targetAgent === 'claude' ? 'routeToClaude' : 'routeToCodex';
-  const result = await orch[agent](prompt, {
+  const displayNames = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
+  const displayName = displayNames[skill.targetAgent] || skill.targetAgent;
+  console.log(c.header(displayName, skill.name));
+  const result = await orch.routeTo(skill.targetAgent, prompt, {
     onData: (text) => process.stdout.write(text),
     allowTools: skill.allowTools ?? true,
   });
@@ -165,5 +168,6 @@ async function cmdAuto(args, cwd) {
 function makeOrchestrator(cwd) {
   const claude = new ClaudeAgent({ cwd });
   const codex = new CodexAgent({ cwd });
-  return new Orchestrator({ claude, codex });
+  const gemini = new GeminiAgent({ cwd });
+  return new Orchestrator({ claude, codex, gemini });
 }
