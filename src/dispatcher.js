@@ -3,6 +3,7 @@
  */
 import * as c from './colors.js';
 import { StreamMux } from './stream-mux.js';
+import { createEventHandler } from './renderer.js';
 
 const ROUTES = new Map();
 
@@ -55,6 +56,7 @@ async function handleClaude(prompt, orch) {
   console.log(c.header('Claude'));
   const result = await orch.routeTo('claude', prompt, {
     onData: (text) => process.stdout.write(text),
+    onEvent: createEventHandler(),
     allowTools: true,
   });
   if (!result.output) console.log(c.dim('(no output)'));
@@ -66,6 +68,7 @@ async function handleCodex(prompt, orch) {
   console.log(c.header('Codex'));
   const result = await orch.routeTo('codex', prompt, {
     onData: (text) => process.stdout.write(text),
+    onEvent: createEventHandler(),
   });
   if (!result.output) console.log(c.dim('(no output)'));
   console.log(c.footer());
@@ -76,6 +79,7 @@ async function handleGemini(prompt, orch) {
   console.log(c.header('Gemini'));
   const result = await orch.routeTo('gemini', prompt, {
     onData: (text) => process.stdout.write(text),
+    onEvent: createEventHandler(),
     allowTools: true,
   });
   if (!result.output) console.log(c.dim('(no output)'));
@@ -84,6 +88,7 @@ async function handleGemini(prompt, orch) {
 }
 
 async function handlePlan(prompt, orch) {
+  const onEvent = createEventHandler();
   await orch.planAndImplement(prompt, {
     onPhase: (phase) => {
       if (phase === 'planning') {
@@ -95,11 +100,13 @@ async function handlePlan(prompt, orch) {
     },
     onPlanData: (text) => process.stdout.write(text),
     onImplData: (text) => process.stdout.write(text),
+    onEvent,
   });
   console.log(c.footer());
 }
 
 async function handleReverse(prompt, orch) {
+  const onEvent = createEventHandler();
   await orch.reversePlanAndImplement(prompt, {
     onPhase: (phase) => {
       if (phase === 'planning') {
@@ -111,6 +118,7 @@ async function handleReverse(prompt, orch) {
     },
     onPlanData: (text) => process.stdout.write(text),
     onImplData: (text) => process.stdout.write(text),
+    onEvent,
   });
   console.log(c.footer());
 }
