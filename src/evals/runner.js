@@ -29,8 +29,14 @@ export async function runEvalSuite(skill, suitePath, orch, options = {}) {
   const cases = suite.cases || [];
   const results = [];
 
+  // Allow suite-level judgeAgent override
+  const suiteOptions = { ...options };
+  if (suite.judgeAgent) {
+    suiteOptions.judgeAgent = suite.judgeAgent;
+  }
+
   for (const caseDef of cases) {
-    const caseResult = await runCase(skill, caseDef, orch, options);
+    const caseResult = await runCase(skill, caseDef, orch, suiteOptions);
     results.push(caseResult);
   }
 
@@ -71,7 +77,9 @@ async function runCase(skill, caseDef, orch, options = {}) {
     let judgeScore = null;
     let judgeReason = null;
     if (options.useJudge !== false && caseDef.judgePrompt) {
-      const judgeResult = await runJudge(caseDef, result.output, orch);
+      const judgeResult = await runJudge(caseDef, result.output, orch, {
+        judgeAgent: options.judgeAgent || 'claude',
+      });
       judgeScore = judgeResult.score;
       judgeReason = judgeResult.reason;
     }
@@ -120,12 +128,17 @@ async function createCaseWorkspace(caseDef, baseCwd) {
 
 /**
  * Run the LLM judge to get a qualitative score.
+ *
+ * @param {Object} caseDef      - The case definition from suite.json
+ * @param {string} agentOutput  - The agent's output to judge
+ * @param {Object} orch         - Orchestrator instance
+ * @param {Object} opts         - { judgeAgent?: string }
  */
-async function runJudge(caseDef, agentOutput, orch) {
+async function runJudge(caseDef, agentOutput, orch, { judgeAgent = 'claude' } = {}) {
   const judgePrompt = buildJudgePrompt(caseDef, agentOutput);
 
   try {
-    const result = await orch.routeTo('claude', judgePrompt, { allowTools: false });
+    const result = await orch.routeTo(judgeAgent, judgePrompt, { allowTools: false });
     const parsed = JSON.parse(result.output);
     return {
       score: Math.min(1, Math.max(0, (parsed.score || 0) / 10)),
