@@ -27,7 +27,8 @@ export class GeminiAgent extends BaseAgent {
         args.push(prompt);
       }
 
-      const proc = spawn('gemini', args, {
+      const spawnFn = this._spawn || spawn;
+      const proc = spawnFn('gemini', args, {
         cwd: targetCwd,
         env: { ...process.env },
         stdio: ['ignore', 'pipe', 'pipe'],

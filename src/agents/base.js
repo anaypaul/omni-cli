@@ -29,6 +29,7 @@ export class BaseAgent {
       throw new Error('BaseAgent is abstract and cannot be instantiated directly');
     }
     this.cwd = options.cwd || process.cwd();
+    this._spawn = options.spawn || null;
     this._sessionId = null;
     this._proc = null;
   }

@@ -34,7 +34,8 @@ export class CodexAgent extends BaseAgent {
 
       const startTime = Date.now();
 
-      const proc = spawn('codex', args, {
+      const spawnFn = this._spawn || spawn;
+      const proc = spawnFn('codex', args, {
         cwd: targetCwd,
         env: { ...process.env },
         stdio: ['ignore', 'pipe', 'pipe'],

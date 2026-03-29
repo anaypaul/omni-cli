@@ -32,7 +32,8 @@ export class ClaudeAgent extends BaseAgent {
 
       const startTime = Date.now();
 
-      const proc = spawn('claude', args, {
+      const spawnFn = this._spawn || spawn;
+      const proc = spawnFn('claude', args, {
         cwd: targetCwd,
         env: { ...process.env },
         stdio: ['ignore', 'pipe', 'pipe'],
