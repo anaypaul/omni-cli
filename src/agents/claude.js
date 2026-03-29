@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { BaseAgent } from './base.js';
+import * as events from '../events.js';
 
 export class ClaudeAgent extends BaseAgent {
   constructor(options = {}) {
@@ -8,7 +9,7 @@ export class ClaudeAgent extends BaseAgent {
 
   get name() { return 'claude'; }
 
-  run(prompt, { onData, cwd, allowTools = false } = {}) {
+  run(prompt, { onData, onEvent, cwd, allowTools = false } = {}) {
     return new Promise((resolve, reject) => {
       const targetCwd = cwd || this.cwd;
       const args = [
@@ -64,6 +65,13 @@ export class ClaudeAgent extends BaseAgent {
                 const text = inner.delta.text;
                 output += text;
                 if (onData) onData(text);
+                if (onEvent) onEvent(events.textDelta('claude', text));
+              }
+              if (inner?.type === 'content_block_start' && inner.content_block?.type === 'tool_use') {
+                if (onEvent) onEvent(events.toolUse('claude', inner.content_block.name, inner.content_block.input));
+              }
+              if (inner?.type === 'content_block_delta' && inner.delta?.type === 'thinking_delta') {
+                if (onEvent) onEvent(events.thinking('claude', inner.delta.thinking));
               }
             }
           } catch {
@@ -98,6 +106,8 @@ export class ClaudeAgent extends BaseAgent {
         // Persist session for next call
         if (sessionId) this.sessionId = sessionId;
 
+        if (onEvent) onEvent(events.done('claude', { output: output.trim(), exitCode: code }));
+
         resolve({
           output: output.trim(),
           stderr: stderr.trim(),
@@ -109,6 +119,7 @@ export class ClaudeAgent extends BaseAgent {
       });
 
       proc.on('error', (err) => {
+        if (onEvent) onEvent(events.error('claude', err.message));
         reject(new Error(`Failed to start Claude Code: ${err.message}. Is it installed?`));
       });
 
