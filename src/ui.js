@@ -5,6 +5,9 @@ import { Orchestrator } from './orchestrator.js';
 import { registerBuiltinRoutes, registerRoute, dispatch, parseREPLInput } from './dispatcher.js';
 import * as c from './colors.js';
 
+const AGENT_CLASSES = { claude: ClaudeAgent, codex: CodexAgent, gemini: GeminiAgent };
+const AGENT_COLOR_FNS = { claude: c.claude, codex: c.codex, gemini: c.gemini };
+
 function printBanner() {
   console.log(c.bold('\n  Omni CLI v0.1.0'));
   console.log(c.dim('  Multi-Agent Development Tool\n'));
@@ -114,15 +117,44 @@ function registerEvalRoutes(cwd) {
 
 export async function startUI(options = {}) {
   const cwd = options.cwd || process.cwd();
-  const claude = new ClaudeAgent({ cwd });
-  const codex = new CodexAgent({ cwd });
-  const gemini = new GeminiAgent({ cwd });
-  const orch = new Orchestrator({ claude, codex, gemini });
+  const config = options.config || {};
+  const detection = options.detection || {};
+  const disableAgents = config.disableAgents || [];
+
+  // Only instantiate agents that are available and not disabled
+  const agents = {};
+  for (const name of ['claude', 'codex', 'gemini']) {
+    const isAvailable = detection[name]?.available !== false;
+    const isDisabled = disableAgents.includes(name);
+    if (isAvailable && !isDisabled) {
+      const AgentClass = AGENT_CLASSES[name];
+      agents[name] = new AgentClass({ cwd });
+    }
+  }
+
+  const orch = new Orchestrator(agents);
 
   registerBuiltinRoutes();
   registerEvalRoutes(cwd);
 
   printBanner();
+
+  // Display agent availability status
+  console.log(c.dim('  Agents:'));
+  for (const name of ['claude', 'codex', 'gemini']) {
+    const colorFn = AGENT_COLOR_FNS[name] || c.dim;
+    const info = detection[name];
+    const isDisabled = disableAgents.includes(name);
+    if (isDisabled) {
+      console.log(`    ${colorFn(name)}  ${c.dim('disabled')}`);
+    } else if (info?.available) {
+      const ver = info.version ? c.dim(` (${info.version})`) : '';
+      console.log(`    ${colorFn(name)}  ${c.system('ready')}${ver}`);
+    } else {
+      console.log(`    ${colorFn(name)}  ${c.error('not found')}`);
+    }
+  }
+  console.log('');
 
   process.on('SIGINT', () => {
     orch.killAll();

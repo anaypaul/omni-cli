@@ -29,6 +29,8 @@ function usage() {
 
 export async function runCLI(args, options = {}) {
   const cwd = options.cwd || process.cwd();
+  const config = options.config || {};
+  const detection = options.detection || {};
   const command = args[0]?.toLowerCase();
 
   try {
@@ -37,13 +39,13 @@ export async function runCLI(args, options = {}) {
         await cmdSkills(args.slice(1));
         break;
       case 'eval':
-        await cmdEval(args.slice(1), cwd);
+        await cmdEval(args.slice(1), cwd, { config, detection });
         break;
       case 'implement':
-        await cmdImplement(args.slice(1), cwd);
+        await cmdImplement(args.slice(1), cwd, { config, detection });
         break;
       case 'auto':
-        await cmdAuto(args.slice(1), cwd);
+        await cmdAuto(args.slice(1), cwd, { config, detection });
         break;
       case 'help':
       case '--help':
@@ -88,7 +90,7 @@ async function cmdSkills(args) {
 
 // ── eval <skill-id> ──────────────────────────────────────────────────
 
-async function cmdEval(args, cwd) {
+async function cmdEval(args, cwd, { config, detection } = {}) {
   const skillId = args[0];
   if (!skillId) {
     console.log(c.error('Usage: omni eval <skill-id>'));
@@ -99,7 +101,7 @@ async function cmdEval(args, cwd) {
   const skill = await loadSkill(skillPath);
   const suitePath = join(EVALS_DIR, skillId, 'suite.json');
 
-  const orch = makeOrchestrator(cwd);
+  const orch = makeOrchestrator(cwd, { config, detection });
   const results = await runEvalSuite(skill, suitePath, orch, { cwd });
 
   printSummaryTable(skill, results);
@@ -108,7 +110,7 @@ async function cmdEval(args, cwd) {
 
 // ── implement <skill-id> "<task>" ────────────────────────────────────
 
-async function cmdImplement(args, cwd) {
+async function cmdImplement(args, cwd, { config, detection } = {}) {
   const skillId = args[0];
   const task = args.slice(1).join(' ');
   if (!skillId || !task) {
@@ -120,7 +122,7 @@ async function cmdImplement(args, cwd) {
   const skill = await loadSkill(skillPath);
   const prompt = renderPrompt(skill, task);
 
-  const orch = makeOrchestrator(cwd);
+  const orch = makeOrchestrator(cwd, { config, detection });
 
   const displayNames = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
   const displayName = displayNames[skill.targetAgent] || skill.targetAgent;
@@ -135,14 +137,14 @@ async function cmdImplement(args, cwd) {
 
 // ── auto "<task>" ────────────────────────────────────────────────────
 
-async function cmdAuto(args, cwd) {
+async function cmdAuto(args, cwd, { config, detection } = {}) {
   const task = args.join(' ');
   if (!task) {
     console.log(c.error('Usage: omni auto "<task>"'));
     process.exit(1);
   }
 
-  const orch = makeOrchestrator(cwd);
+  const orch = makeOrchestrator(cwd, { config, detection });
   const result = await orch.autoImplement(task, {
     skillsDir: SKILLS_DIR,
     evalsDir: EVALS_DIR,
@@ -165,9 +167,18 @@ async function cmdAuto(args, cwd) {
 
 // ── helpers ──────────────────────────────────────────────────────────
 
-function makeOrchestrator(cwd) {
-  const claude = new ClaudeAgent({ cwd });
-  const codex = new CodexAgent({ cwd });
-  const gemini = new GeminiAgent({ cwd });
-  return new Orchestrator({ claude, codex, gemini });
+const AGENT_CLASSES = { claude: ClaudeAgent, codex: CodexAgent, gemini: GeminiAgent };
+
+function makeOrchestrator(cwd, { config, detection } = {}) {
+  const disableAgents = config?.disableAgents || [];
+  const agents = {};
+  for (const name of ['claude', 'codex', 'gemini']) {
+    const isAvailable = !detection || detection[name]?.available !== false;
+    const isDisabled = disableAgents.includes(name);
+    if (isAvailable && !isDisabled) {
+      const AgentClass = AGENT_CLASSES[name];
+      agents[name] = new AgentClass({ cwd });
+    }
+  }
+  return new Orchestrator(agents);
 }
