@@ -54,3 +54,20 @@ export function header(agent, phase) {
 export function footer() {
   return `${codes.dim}${'─'.repeat(54)}${codes.reset}\n`;
 }
+
+export function thinkingText(text) {
+  return `${codes.dim}${codes.cyan}  ⠿ ${text}${codes.reset}`;
+}
+
+export function toolBadge(toolName) {
+  return `${codes.yellow}${codes.bold}  ◆ ${toolName}${codes.reset}`;
+}
+
+export function toolResult(toolName, ok) {
+  const color = ok ? codes.green : codes.red;
+  return `${color}  ◇ ${toolName}${codes.reset}`;
+}
+
+export function errorBlock(message) {
+  return `${codes.red}${codes.bold}  ✗ Error: ${message}${codes.reset}`;
+}
