@@ -5,7 +5,15 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const REQUIRED_FIELDS = ['id', 'name', 'targetAgent', 'systemPrompt', 'taskTemplate'];
-const VALID_AGENTS = ['claude', 'codex'];
+const VALID_AGENTS = new Set(['claude', 'codex']);
+
+export function registerAgent(name) {
+  VALID_AGENTS.add(name);
+}
+
+export function getValidAgents() {
+  return [...VALID_AGENTS];
+}
 
 export class SkillValidationError extends Error {
   constructor(id, problems) {
@@ -24,8 +32,8 @@ export function validateManifest(manifest) {
     }
   }
 
-  if (manifest.targetAgent && !VALID_AGENTS.includes(manifest.targetAgent)) {
-    problems.push(`targetAgent must be one of: ${VALID_AGENTS.join(', ')}`);
+  if (manifest.targetAgent && !VALID_AGENTS.has(manifest.targetAgent)) {
+    problems.push(`targetAgent must be one of: ${[...VALID_AGENTS].join(', ')}`);
   }
 
   if (manifest.allowTools !== undefined && typeof manifest.allowTools !== 'boolean') {

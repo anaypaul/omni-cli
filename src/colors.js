@@ -11,6 +11,8 @@ const codes = {
   white: '\x1b[37m',
 };
 
+export const HEADER_COLORS = { Claude: codes.blue, Codex: codes.green };
+
 export function claude(text) {
   return `${codes.blue}${text}${codes.reset}`;
 }
@@ -40,7 +42,7 @@ export function prompt() {
 }
 
 export function header(agent, phase) {
-  const color = agent === 'Claude' ? codes.blue : codes.green;
+  const color = HEADER_COLORS[agent] || codes.cyan;
   const label = phase ? `${agent} | ${phase}` : agent;
   return `\n${color}${codes.bold}[${label}]${codes.reset} ${'─'.repeat(Math.max(1, 50 - label.length))}`;
 }
