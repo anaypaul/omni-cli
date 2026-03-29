@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { BaseAgent } from './base.js';
+import * as events from '../events.js';
 
 export class GeminiAgent extends BaseAgent {
   constructor(options = {}) {
@@ -10,7 +11,7 @@ export class GeminiAgent extends BaseAgent {
     return 'gemini';
   }
 
-  async run(prompt, { onData, cwd, allowTools = false } = {}) {
+  async run(prompt, { onData, onEvent, cwd, allowTools = false } = {}) {
     return new Promise((resolve, reject) => {
       const targetCwd = cwd || this.cwd;
       const args = ['--output-format', 'stream-json'];
@@ -59,7 +60,16 @@ export class GeminiAgent extends BaseAgent {
               if (text) {
                 output += text;
                 if (onData) onData(text);
+                if (onEvent) onEvent(events.textDelta('gemini', text));
               }
+            }
+
+            if (event.type === 'tool_use') {
+              if (onEvent) onEvent(events.toolUse('gemini', event.name || 'tool', event.input || {}));
+            }
+
+            if (event.type === 'tool_result') {
+              if (onEvent) onEvent(events.toolResult('gemini', event.name || 'tool', event.output || '', event.error || null));
             }
           } catch {
             output += line + '\n';
@@ -92,6 +102,8 @@ export class GeminiAgent extends BaseAgent {
 
         if (sessionId) this.sessionId = sessionId;
 
+        if (onEvent) onEvent(events.done('gemini', { output: output.trim(), exitCode: code }));
+
         resolve({
           output: output.trim(),
           stderr: stderrBuf.trim(),
@@ -103,6 +115,7 @@ export class GeminiAgent extends BaseAgent {
       });
 
       proc.on('error', (err) => {
+        if (onEvent) onEvent(events.error('gemini', err.message));
         reject(new Error(`Failed to start Gemini CLI: ${err.message}. Is it installed? Install with: npm i -g @anthropic-ai/gemini-cli`));
       });
     });
