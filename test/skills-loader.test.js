@@ -75,16 +75,26 @@ describe('validateManifest', () => {
 describe('loadAllSkills', () => {
   it('loads all skill manifests from the skills directory', async () => {
     const skills = await loadAllSkills(SKILLS_DIR);
-    assert.ok(skills.length >= 3);
+    assert.ok(skills.length >= 4);
     const ids = skills.map((s) => s.id);
     assert.ok(ids.includes('planner'));
     assert.ok(ids.includes('bugfixer'));
     assert.ok(ids.includes('feature-implementer'));
+    assert.ok(ids.includes('gemini-planner'));
   });
 
   it('returns empty array for non-existent directory', async () => {
     const skills = await loadAllSkills('/tmp/does-not-exist-omni');
     assert.equal(skills.length, 0);
+  });
+
+  it('gemini-planner skill has targetAgent gemini', async () => {
+    const skills = await loadAllSkills(SKILLS_DIR);
+    const geminiPlanner = skills.find((s) => s.id === 'gemini-planner');
+    assert.ok(geminiPlanner, 'gemini-planner skill should exist');
+    assert.equal(geminiPlanner.targetAgent, 'gemini');
+    assert.equal(geminiPlanner.allowTools, false);
+    assert.equal(geminiPlanner.defaultEvalSuite, 'gemini-planner');
   });
 });
 
