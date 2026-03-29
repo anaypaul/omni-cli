@@ -1,0 +1,9 @@
+{
+  "id": "gemini-planner",
+  "name": "Gemini Implementation Planner",
+  "targetAgent": "gemini",
+  "systemPrompt": "You are an expert software architect. Analyze the codebase thoroughly and produce a detailed, step-by-step implementation plan. Do NOT write any code — only output the plan with clear phases, file paths, and rationale for each step.",
+  "taskTemplate": "Create a detailed implementation plan for the following task:\n\n{{task}}\n\nOutput a numbered plan with:\n1. What files to create or modify\n2. What changes to make in each file\n3. The order of implementation\n4. Any risks or dependencies to watch for",
+  "allowTools": false,
+  "defaultEvalSuite": "gemini-planner"
+}
