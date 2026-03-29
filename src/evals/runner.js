@@ -53,8 +53,7 @@ async function runCase(skill, caseDef, orch, options = {}) {
 
     // Run the agent
     const startTime = Date.now();
-    const agentMethod = skill.targetAgent === 'claude' ? 'routeToClaude' : 'routeToCodex';
-    const result = await orch[agentMethod](prompt, {
+    const result = await orch.routeTo(skill.targetAgent, prompt, {
       cwd: workDir,
       allowTools: skill.allowTools ?? true,
       readOnly: skill.targetAgent === 'codex' && !skill.allowTools,
@@ -126,7 +125,7 @@ async function runJudge(caseDef, agentOutput, orch) {
   const judgePrompt = buildJudgePrompt(caseDef, agentOutput);
 
   try {
-    const result = await orch.routeToClaude(judgePrompt, { allowTools: false });
+    const result = await orch.routeTo('claude', judgePrompt, { allowTools: false });
     const parsed = JSON.parse(result.output);
     return {
       score: Math.min(1, Math.max(0, (parsed.score || 0) / 10)),
