@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { BaseAgent } from './base.js';
+import * as events from '../events.js';
 
 export class CodexAgent extends BaseAgent {
   constructor(options = {}) {
@@ -11,7 +12,7 @@ export class CodexAgent extends BaseAgent {
   get threadId() { return this.sessionId; }
   set threadId(value) { this.sessionId = value; }
 
-  run(prompt, { onData, cwd, readOnly = false } = {}) {
+  run(prompt, { onData, onEvent, cwd, readOnly = false } = {}) {
     return new Promise((resolve, reject) => {
       const targetCwd = cwd || this.cwd;
       const args = ['exec'];
@@ -60,7 +61,7 @@ export class CodexAgent extends BaseAgent {
               threadId = event.thread_id;
             }
 
-            this._processEvent(event, { onData, itemTexts, messages });
+            this._processEvent(event, { onData, onEvent, itemTexts, messages });
           } catch {
             // Non-JSON line, pass through
             if (onData) onData(line + '\n');
@@ -80,7 +81,7 @@ export class CodexAgent extends BaseAgent {
             if (event.type === 'thread.started' && event.thread_id) {
               threadId = event.thread_id;
             }
-            this._processEvent(event, { onData, itemTexts, messages });
+            this._processEvent(event, { onData, onEvent, itemTexts, messages });
           } catch {
             // ignore
           }
@@ -91,9 +92,12 @@ export class CodexAgent extends BaseAgent {
 
         const output = messages.join('\n').trim();
         if (code !== 0 && !output && stderrBuf.trim()) {
+          if (onEvent) onEvent(events.error('codex', stderrBuf.trim()));
           reject(new Error(`Codex failed: ${stderrBuf.trim()}`));
           return;
         }
+
+        if (onEvent) onEvent(events.done('codex', { output, exitCode: code }));
 
         resolve({
           output,
@@ -106,6 +110,7 @@ export class CodexAgent extends BaseAgent {
       });
 
       proc.on('error', (err) => {
+        if (onEvent) onEvent(events.error('codex', err.message));
         reject(new Error(`Failed to start Codex CLI: ${err.message}. Is it installed?`));
       });
 
@@ -113,7 +118,7 @@ export class CodexAgent extends BaseAgent {
     });
   }
 
-  _processEvent(event, { onData, itemTexts, messages }) {
+  _processEvent(event, { onData, onEvent, itemTexts, messages }) {
     const item = event.item;
     if (!item || !item.id) return;
 
@@ -125,6 +130,7 @@ export class CodexAgent extends BaseAgent {
       if (curr.length > prev.length) {
         const delta = curr.slice(prev.length);
         if (onData) onData(delta);
+        if (onEvent) onEvent(events.textDelta('codex', delta));
       }
 
       itemTexts.set(item.id, curr);
@@ -133,6 +139,14 @@ export class CodexAgent extends BaseAgent {
       if (event.type === 'item.completed') {
         messages.push(curr);
       }
+    }
+
+    if (item.type === 'tool_call') {
+      if (onEvent) onEvent(events.toolUse('codex', item.name || 'tool', item.arguments || {}));
+    }
+
+    if (item.type === 'tool_output') {
+      if (onEvent) onEvent(events.toolResult('codex', item.name || 'tool', item.output || '', item.error || null));
     }
   }
 
