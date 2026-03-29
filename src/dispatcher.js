@@ -44,14 +44,16 @@ export async function dispatch(route, prompt, orch, options = {}) {
 export function registerBuiltinRoutes() {
   registerRoute('claude', handleClaude, 'Send to Claude Code');
   registerRoute('codex', handleCodex, 'Send to Codex CLI');
+  registerRoute('gemini', handleGemini, 'Send to Gemini CLI');
   registerRoute('plan', handlePlan, 'Codex plans, Claude implements');
   registerRoute('reverse', handleReverse, 'Claude plans, Codex implements');
   registerRoute('both', handleBoth, 'Ask both agents');
+  registerRoute('all', handleAll, 'Ask all available agents in parallel');
 }
 
 async function handleClaude(prompt, orch) {
   console.log(c.header('Claude'));
-  const result = await orch.routeToClaude(prompt, {
+  const result = await orch.routeTo('claude', prompt, {
     onData: (text) => process.stdout.write(text),
     allowTools: true,
   });
@@ -62,8 +64,19 @@ async function handleClaude(prompt, orch) {
 
 async function handleCodex(prompt, orch) {
   console.log(c.header('Codex'));
-  const result = await orch.routeToCodex(prompt, {
+  const result = await orch.routeTo('codex', prompt, {
     onData: (text) => process.stdout.write(text),
+  });
+  if (!result.output) console.log(c.dim('(no output)'));
+  console.log(c.footer());
+  return result;
+}
+
+async function handleGemini(prompt, orch) {
+  console.log(c.header('Gemini'));
+  const result = await orch.routeTo('gemini', prompt, {
+    onData: (text) => process.stdout.write(text),
+    allowTools: true,
   });
   if (!result.output) console.log(c.dim('(no output)'));
   console.log(c.footer());
@@ -118,4 +131,36 @@ async function handleBoth(prompt, orch) {
   mux.flush();
   console.log(c.footer());
   return result;
+}
+
+async function handleAll(prompt, orch) {
+  const mux = new StreamMux();
+  const agentNames = orch.getAvailableAgents();
+  const nameMap = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
+  const writers = {};
+
+  for (const name of agentNames) {
+    const displayName = nameMap[name] || name;
+    writers[name] = mux.createWriter(displayName);
+  }
+
+  const label = agentNames.map((n) => nameMap[n] || n).join(' + ');
+  console.log(c.header(label, 'parallel'));
+
+  const promises = agentNames.map((name) =>
+    orch.routeTo(name, prompt, {
+      onData: writers[name],
+      allowTools: true,
+    })
+  );
+
+  const results = await Promise.all(promises);
+  const resultMap = {};
+  agentNames.forEach((name, i) => {
+    resultMap[name] = results[i];
+  });
+
+  mux.flush();
+  console.log(c.footer());
+  return resultMap;
 }

@@ -37,6 +37,12 @@ describe('parseREPLInput', () => {
     assert.equal(result.route, 'auto');
     assert.equal(result.prompt, 'fix the login bug');
   });
+
+  it('handles @gemini prefix', () => {
+    const result = parseREPLInput('@gemini explain this');
+    assert.equal(result.route, 'gemini');
+    assert.equal(result.prompt, 'explain this');
+  });
 });
 
 describe('parseCommand', () => {
