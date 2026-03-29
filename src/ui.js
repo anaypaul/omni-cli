@@ -9,7 +9,7 @@ const AGENT_CLASSES = { claude: ClaudeAgent, codex: CodexAgent, gemini: GeminiAg
 const AGENT_COLOR_FNS = { claude: c.claude, codex: c.codex, gemini: c.gemini };
 
 function printBanner() {
-  console.log(c.bold('\n  Omni CLI v0.1.0'));
+  console.log(c.bold('\n  Omni CLI v0.2.0'));
   console.log(c.dim('  Multi-Agent Development Tool\n'));
   console.log(c.dim('  Routes:'));
   console.log(`    ${c.claude('@claude')} <prompt>  Send to Claude Code`);

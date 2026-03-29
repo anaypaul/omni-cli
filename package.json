@@ -1,7 +1,7 @@
 {
   "name": "omni-cli",
-  "version": "0.1.0",
-  "description": "Multi-agent CLI orchestrator for Claude Code and Codex CLI",
+  "version": "0.2.0",
+  "description": "Multi-agent CLI orchestrator for Claude Code, Codex CLI, and Gemini CLI",
   "type": "module",
   "bin": {
     "omni": "./bin/omni.js"
