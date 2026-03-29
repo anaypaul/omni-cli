@@ -1,10 +1,15 @@
 import { spawn } from 'node:child_process';
+import { BaseAgent } from './base.js';
 
-export class CodexAgent {
+export class CodexAgent extends BaseAgent {
   constructor(options = {}) {
-    this.cwd = options.cwd || process.cwd();
-    this.threadId = null;
+    super(options);
   }
+
+  get name() { return 'codex'; }
+
+  get threadId() { return this.sessionId; }
+  set threadId(value) { this.sessionId = value; }
 
   run(prompt, { onData, cwd, readOnly = false } = {}) {
     return new Promise((resolve, reject) => {
@@ -95,8 +100,8 @@ export class CodexAgent {
           stderr: stderrBuf.trim(),
           exitCode: code,
           durationMs: Date.now() - startTime,
-          threadId,
-          agent: 'codex',
+          sessionId: threadId,
+          agent: this.name,
         });
       });
 
@@ -131,13 +136,4 @@ export class CodexAgent {
     }
   }
 
-  resetSession() {
-    this.threadId = null;
-  }
-
-  kill() {
-    if (this._proc && !this._proc.killed) {
-      this._proc.kill('SIGTERM');
-    }
-  }
 }
