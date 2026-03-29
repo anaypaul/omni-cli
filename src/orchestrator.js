@@ -4,10 +4,14 @@ import { runEvalSuite } from './evals/runner.js';
 import { printSummaryTable } from './evals/reporter.js';
 
 export class Orchestrator {
-  constructor({ claude, codex }) {
+  constructor({ claude, codex, gemini }) {
     this.claude = claude;
     this.codex = codex;
-    this._agents = new Map([['claude', claude], ['codex', codex]]);
+    this.gemini = gemini;
+    this._agents = new Map();
+    if (claude) this._agents.set('claude', claude);
+    if (codex) this._agents.set('codex', codex);
+    if (gemini) this._agents.set('gemini', gemini);
   }
 
   async routeTo(agentName, prompt, options = {}) {
@@ -24,6 +28,10 @@ export class Orchestrator {
 
   async routeToCodex(prompt, options = {}) {
     return this.routeTo('codex', prompt, options);
+  }
+
+  async routeToGemini(prompt, options = {}) {
+    return this.routeTo('gemini', prompt, options);
   }
 
   async planAndImplement(task, { onPlanData, onImplData, onPhase } = {}) {
@@ -124,8 +132,7 @@ export class Orchestrator {
    */
   async runSkill(skill, task, options = {}) {
     const prompt = renderPrompt(skill, task);
-    const agentMethod = skill.targetAgent === 'claude' ? 'routeToClaude' : 'routeToCodex';
-    return this[agentMethod](prompt, {
+    return this.routeTo(skill.targetAgent, prompt, {
       allowTools: skill.allowTools ?? true,
       ...options,
     });
@@ -196,7 +203,7 @@ export class Orchestrator {
     if (onPhase) onPhase('implementing', winner.skill.name);
 
     const prompt = renderPrompt(winner.skill, task);
-    const implResult = await this.routeToClaude(prompt, {
+    const implResult = await this.routeTo(winner.skill.targetAgent, prompt, {
       onData,
       allowTools: true,
       cwd,
@@ -210,6 +217,10 @@ export class Orchestrator {
       })),
       implementation: implResult,
     };
+  }
+
+  getAvailableAgents() {
+    return [...this._agents.keys()];
   }
 
   resetSessions() {
