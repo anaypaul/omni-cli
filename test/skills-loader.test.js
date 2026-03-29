@@ -49,6 +49,15 @@ describe('validateManifest', () => {
     assert.ok(problems.some((p) => p.includes('{{task}}')));
   });
 
+  it('accepts gemini as a valid targetAgent', () => {
+    const manifest = {
+      id: 'test', name: 'Test', targetAgent: 'gemini',
+      systemPrompt: 'x', taskTemplate: '{{task}}',
+    };
+    const problems = validateManifest(manifest);
+    assert.equal(problems.length, 0);
+  });
+
   it('rejects non-boolean allowTools', () => {
     const manifest = {
       id: 'test',

@@ -5,7 +5,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const REQUIRED_FIELDS = ['id', 'name', 'targetAgent', 'systemPrompt', 'taskTemplate'];
-const VALID_AGENTS = new Set(['claude', 'codex']);
+const VALID_AGENTS = new Set(['claude', 'codex', 'gemini']);
 
 export function registerAgent(name) {
   VALID_AGENTS.add(name);
