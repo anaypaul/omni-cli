@@ -13,11 +13,13 @@ const RESET = '\x1b[0m';
 const DIM = '\x1b[2m';
 const BLUE = '\x1b[34m';
 const GREEN = '\x1b[32m';
+const YELLOW = '\x1b[33m';
 const BOLD = '\x1b[1m';
 
 const AGENT_COLORS = {
   Claude: BLUE,
   Codex: GREEN,
+  Gemini: YELLOW,
 };
 
 export class StreamMux {
