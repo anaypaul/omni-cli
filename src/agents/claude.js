@@ -1,10 +1,12 @@
 import { spawn } from 'node:child_process';
+import { BaseAgent } from './base.js';
 
-export class ClaudeAgent {
+export class ClaudeAgent extends BaseAgent {
   constructor(options = {}) {
-    this.cwd = options.cwd || process.cwd();
-    this.sessionId = null;
+    super(options);
   }
+
+  get name() { return 'claude'; }
 
   run(prompt, { onData, cwd, allowTools = false } = {}) {
     return new Promise((resolve, reject) => {
@@ -102,7 +104,7 @@ export class ClaudeAgent {
           exitCode: code,
           durationMs: Date.now() - startTime,
           sessionId,
-          agent: 'claude',
+          agent: this.name,
         });
       });
 
@@ -112,15 +114,5 @@ export class ClaudeAgent {
 
       this._proc = proc;
     });
-  }
-
-  resetSession() {
-    this.sessionId = null;
-  }
-
-  kill() {
-    if (this._proc && !this._proc.killed) {
-      this._proc.kill('SIGTERM');
-    }
   }
 }
