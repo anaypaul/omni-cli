@@ -1,0 +1,53 @@
+{
+  "name": "Feature Implementer Skill Eval Suite",
+  "description": "Tests the feature-implementer skill's ability to build new functionality",
+  "cases": [
+    {
+      "name": "add-version-flag",
+      "task": "Add a --version flag to the CLI (bin/omni.js) that prints the version from package.json and exits. Should work as both 'omni --version' and 'omni -v'.",
+      "expectedChecks": [
+        {
+          "type": "regex",
+          "pattern": "(version|--version|-v)",
+          "in": "output"
+        },
+        {
+          "type": "regex",
+          "pattern": "(package\\.json|import|require)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "judgePrompt": "Rate this feature implementation from 0 to 10. A good implementation should: (1) read the version from package.json, (2) handle both --version and -v flags, (3) exit cleanly after printing. Deduct for not integrating with the existing CLI structure.",
+      "weights": { "checks": 0.5, "judge": 0.5 }
+    },
+    {
+      "name": "add-config-file",
+      "task": "Add support for a .omnirc.json config file in the project root that can set default agent preferences (preferredAgent: 'claude' | 'codex') and custom aliases for routes.",
+      "expectedChecks": [
+        {
+          "type": "regex",
+          "pattern": "(\\.omnirc|config)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "regex",
+          "pattern": "(JSON|parse|read)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "judgePrompt": "Rate this feature implementation from 0 to 10. It should: (1) define a clear config schema, (2) load the file on startup, (3) use defaults when the file is missing, (4) integrate with the existing routing system.",
+      "weights": { "checks": 0.5, "judge": 0.5 }
+    }
+  ]
+}

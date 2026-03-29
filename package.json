@@ -1,0 +1,16 @@
+{
+  "name": "omni-cli",
+  "version": "0.1.0",
+  "description": "Multi-agent CLI orchestrator for Claude Code and Codex CLI",
+  "type": "module",
+  "bin": {
+    "omni": "./bin/omni.js"
+  },
+  "scripts": {
+    "start": "node bin/omni.js",
+    "test": "node --test 'test/*.test.js'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

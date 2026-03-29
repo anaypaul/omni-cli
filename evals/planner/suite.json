@@ -1,0 +1,85 @@
+{
+  "name": "Planner Skill Eval Suite",
+  "description": "Tests the planner skill's ability to produce structured implementation plans",
+  "cases": [
+    {
+      "name": "add-cli-args",
+      "task": "Add non-interactive CLI argument parsing to bin/omni.js so it supports subcommands like 'omni skills list' and 'omni eval <skill>'",
+      "expectedChecks": [
+        {
+          "type": "substring",
+          "value": "bin/omni.js",
+          "in": "output"
+        },
+        {
+          "type": "regex",
+          "pattern": "\\d+\\.",
+          "in": "output"
+        },
+        {
+          "type": "regex",
+          "pattern": "(step|phase|first|then|next)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "judgePrompt": "Rate this implementation plan from 0 to 10. A good plan should: (1) identify specific files to modify, (2) describe changes in order, (3) mention backward compatibility with the existing REPL, (4) be actionable without ambiguity.",
+      "weights": { "checks": 0.6, "judge": 0.4 }
+    },
+    {
+      "name": "error-handling",
+      "task": "Improve error handling in the agent adapters (src/agents/claude.js and src/agents/codex.js) to include timeouts, retry logic, and structured error types",
+      "expectedChecks": [
+        {
+          "type": "substring",
+          "value": "claude.js",
+          "in": "output"
+        },
+        {
+          "type": "substring",
+          "value": "codex.js",
+          "in": "output"
+        },
+        {
+          "type": "regex",
+          "pattern": "(timeout|retry|error)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "judgePrompt": "Rate this implementation plan from 0 to 10. A good plan should cover timeout configuration, retry strategies with backoff, and specific error types. Deduct points for vague or hand-wavy suggestions.",
+      "weights": { "checks": 0.6, "judge": 0.4 }
+    },
+    {
+      "name": "add-new-route",
+      "task": "Add a new '@status' route to the REPL that shows the health of configured agents (whether claude and codex CLIs are installed and responsive)",
+      "expectedChecks": [
+        {
+          "type": "substring",
+          "value": "status",
+          "in": "output"
+        },
+        {
+          "type": "regex",
+          "pattern": "(ui\\.js|dispatcher|route)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "judgePrompt": "Rate this implementation plan from 0 to 10. A good plan should identify where to add the route, how to check agent health, and how to display results. It should integrate with the existing route system.",
+      "weights": { "checks": 0.6, "judge": 0.4 }
+    }
+  ]
+}

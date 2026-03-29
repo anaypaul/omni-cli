@@ -1,0 +1,47 @@
+{
+  "name": "Bug Fixer Skill Eval Suite",
+  "description": "Tests the bugfixer skill's ability to identify and fix code issues",
+  "cases": [
+    {
+      "name": "missing-null-check",
+      "task": "In src/orchestrator.js, the planAndImplement method doesn't check if the codex agent returned a non-zero exit code before using the plan output. Fix this to throw a descriptive error when codex fails.",
+      "expectedChecks": [
+        {
+          "type": "regex",
+          "pattern": "(exitCode|exit_code|exit code)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "regex",
+          "pattern": "(throw|Error|error)",
+          "in": "output"
+        },
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "judgePrompt": "Rate this bug fix from 0 to 10. A good fix should: (1) check the exit code, (2) provide a clear error message, (3) not change unrelated code. Deduct for over-engineering or unrelated changes.",
+      "weights": { "checks": 0.5, "judge": 0.5 }
+    },
+    {
+      "name": "stream-encoding",
+      "task": "The ClaudeAgent in src/agents/claude.js uses chunk.toString() without specifying encoding, which can corrupt multi-byte UTF-8 characters split across chunk boundaries. Fix the output buffering to handle this correctly.",
+      "expectedChecks": [
+        {
+          "type": "regex",
+          "pattern": "(encoding|utf|StringDecoder|Buffer)",
+          "flags": "i",
+          "in": "output"
+        },
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "judgePrompt": "Rate this bug fix from 0 to 10. The correct fix should use StringDecoder or an equivalent approach to handle multi-byte character boundaries. Deduct for superficial fixes that don't actually solve the problem.",
+      "weights": { "checks": 0.5, "judge": 0.5 }
+    }
+  ]
+}
