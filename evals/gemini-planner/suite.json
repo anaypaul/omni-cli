@@ -1,0 +1,40 @@
+{
+  "name": "Gemini Planner Skill Eval Suite",
+  "description": "Tests the gemini-planner skill's ability to produce structured implementation plans using Gemini",
+  "cases": [
+    {
+      "name": "add-logging",
+      "task": "Add structured logging to all agent adapters (src/agents/claude.js, src/agents/codex.js, src/agents/gemini.js) using a shared logger utility",
+      "expectedChecks": [
+        { "type": "substring", "value": "claude.js", "in": "output" },
+        { "type": "substring", "value": "codex.js", "in": "output" },
+        { "type": "regex", "pattern": "\\d+\\.", "in": "output" },
+        { "type": "exit_code", "value": 0 }
+      ],
+      "judgePrompt": "Rate this implementation plan from 0 to 10. A good plan should: (1) identify specific files, (2) propose a shared logger, (3) describe changes in order, (4) be actionable.",
+      "weights": { "checks": 0.6, "judge": 0.4 }
+    },
+    {
+      "name": "add-config-validation",
+      "task": "Add runtime validation for the .omnirc.json config file so that invalid keys produce helpful error messages at startup",
+      "expectedChecks": [
+        { "type": "regex", "pattern": "(\\.omnirc|config)", "flags": "i", "in": "output" },
+        { "type": "regex", "pattern": "(validat|schema|error)", "flags": "i", "in": "output" },
+        { "type": "exit_code", "value": 0 }
+      ],
+      "judgePrompt": "Rate this implementation plan from 0 to 10. A good plan should define what valid keys are, how to report errors, and integrate with the startup flow.",
+      "weights": { "checks": 0.6, "judge": 0.4 }
+    },
+    {
+      "name": "add-health-check",
+      "task": "Add a health check system that verifies each agent CLI is installed and responsive before starting the REPL",
+      "expectedChecks": [
+        { "type": "regex", "pattern": "(health|check|detect|which)", "flags": "i", "in": "output" },
+        { "type": "regex", "pattern": "(claude|codex|gemini)", "flags": "i", "in": "output" },
+        { "type": "exit_code", "value": 0 }
+      ],
+      "judgePrompt": "Rate this plan from 0 to 10. It should describe how to check CLI availability, handle missing agents gracefully, and integrate with startup.",
+      "weights": { "checks": 0.6, "judge": 0.4 }
+    }
+  ]
+}
