@@ -1,7 +1,6 @@
 import * as readline from 'node:readline/promises';
 import { join } from 'node:path';
-import { ClaudeAgent } from './agents/claude.js';
-import { CodexAgent } from './agents/codex.js';
+import { ClaudeAgent, CodexAgent } from './agents/index.js';
 import { Orchestrator } from './orchestrator.js';
 import { registerBuiltinRoutes, registerRoute, dispatch, parseREPLInput } from './dispatcher.js';
 import * as c from './colors.js';

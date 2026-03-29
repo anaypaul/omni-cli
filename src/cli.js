@@ -8,8 +8,7 @@
  *   auto "<task>"                   Eval candidate skills, pick best, implement
  */
 import { join } from 'node:path';
-import { ClaudeAgent } from './agents/claude.js';
-import { CodexAgent } from './agents/codex.js';
+import { ClaudeAgent, CodexAgent } from './agents/index.js';
 import { Orchestrator } from './orchestrator.js';
 import { loadAllSkills, loadSkill, renderPrompt } from './skills/loader.js';
 import { runEvalSuite } from './evals/runner.js';
