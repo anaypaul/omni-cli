@@ -66,7 +66,17 @@ describe('Orchestrator', () => {
 
       await assert.rejects(
         () => orch.routeTo('unknown', 'test'),
-        { message: /Unknown agent: unknown/ }
+        { message: /Agent "unknown" is not available/ }
+      );
+    });
+
+    it('error message mentions installation hint', async () => {
+      const claude = createMockAgent('claude');
+      const orch = new Orchestrator({ claude });
+
+      await assert.rejects(
+        () => orch.routeTo('codex', 'test'),
+        { message: /Is the CLI installed/ }
       );
     });
   });
@@ -161,6 +171,51 @@ describe('Orchestrator', () => {
       const agents = orch.getAvailableAgents();
       assert.deepEqual(agents, ['claude', 'codex']);
       assert.ok(!agents.includes('gemini'));
+    });
+  });
+
+  describe('agents getter', () => {
+    it('exposes the internal agents Map', () => {
+      const claude = createMockAgent('claude');
+      const codex = createMockAgent('codex');
+      const orch = new Orchestrator({ claude, codex });
+
+      assert.ok(orch.agents instanceof Map);
+      assert.equal(orch.agents.size, 2);
+      assert.equal(orch.agents.get('claude'), claude);
+      assert.equal(orch.agents.get('codex'), codex);
+    });
+  });
+
+  describe('askBoth', () => {
+    it('runs both claude and codex in parallel', async () => {
+      const claude = createMockAgent('claude');
+      const codex = createMockAgent('codex');
+      const orch = new Orchestrator({ claude, codex });
+
+      const result = await orch.askBoth('test prompt');
+      assert.ok(result.claude);
+      assert.ok(result.codex);
+      assert.equal(result.claude.output, 'claude: test prompt');
+      assert.equal(result.codex.output, 'codex: test prompt');
+    });
+
+    it('runs only available agents gracefully', async () => {
+      const claude = createMockAgent('claude');
+      const orch = new Orchestrator({ claude });
+
+      const result = await orch.askBoth('test prompt');
+      assert.ok(result.claude);
+      assert.equal(result.codex, undefined);
+    });
+
+    it('throws when no agents are available', async () => {
+      const orch = new Orchestrator({});
+
+      await assert.rejects(
+        () => orch.askBoth('test prompt'),
+        { message: /No agents available/ }
+      );
     });
   });
 });

@@ -14,10 +14,23 @@ export class Orchestrator {
     if (gemini) this._agents.set('gemini', gemini);
   }
 
+  /**
+   * Expose the internal agent Map for inspection (read-only reference).
+   */
+  get agents() {
+    return this._agents;
+  }
+
   async routeTo(agentName, prompt, options = {}) {
     const agent = this._agents.get(agentName);
     if (!agent) {
-      throw new Error(`Unknown agent: ${agentName}`);
+      const registered = [...this._agents.keys()];
+      const hint = registered.length > 0
+        ? `Available agents: ${registered.join(', ')}`
+        : 'No agents are currently available';
+      throw new Error(
+        `Agent "${agentName}" is not available. Is the CLI installed and on your PATH? ${hint}`
+      );
     }
     return agent.run(prompt, options);
   }
@@ -117,12 +130,26 @@ export class Orchestrator {
   async askBoth(prompt, { onClaudeData, onCodexData, onPhase } = {}) {
     if (onPhase) onPhase('both');
 
-    const [claudeResult, codexResult] = await Promise.all([
-      this.claude.run(prompt, { onData: onClaudeData }),
-      this.codex.run(prompt, { onData: onCodexData }),
-    ]);
+    const promises = [];
+    const keys = [];
 
-    return { claude: claudeResult, codex: codexResult };
+    if (this._agents.has('claude')) {
+      promises.push(this.claude.run(prompt, { onData: onClaudeData }));
+      keys.push('claude');
+    }
+    if (this._agents.has('codex')) {
+      promises.push(this.codex.run(prompt, { onData: onCodexData }));
+      keys.push('codex');
+    }
+
+    if (promises.length === 0) {
+      throw new Error('No agents available for askBoth');
+    }
+
+    const results = await Promise.all(promises);
+    const resultMap = {};
+    keys.forEach((key, i) => { resultMap[key] = results[i]; });
+    return resultMap;
   }
 
   // ── Skill Lab methods ────────────────────────────────────────────
