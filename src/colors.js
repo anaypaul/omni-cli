@@ -11,7 +11,7 @@ const codes = {
   white: '\x1b[37m',
 };
 
-export const HEADER_COLORS = { Claude: codes.blue, Codex: codes.green };
+export const HEADER_COLORS = { Claude: codes.blue, Codex: codes.green, Gemini: codes.yellow };
 
 export function claude(text) {
   return `${codes.blue}${text}${codes.reset}`;
@@ -19,6 +19,10 @@ export function claude(text) {
 
 export function codex(text) {
   return `${codes.green}${text}${codes.reset}`;
+}
+
+export function gemini(text) {
+  return `${codes.yellow}${text}${codes.reset}`;
 }
 
 export function system(text) {
