@@ -7,14 +7,23 @@ export class Orchestrator {
   constructor({ claude, codex }) {
     this.claude = claude;
     this.codex = codex;
+    this._agents = new Map([['claude', claude], ['codex', codex]]);
+  }
+
+  async routeTo(agentName, prompt, options = {}) {
+    const agent = this._agents.get(agentName);
+    if (!agent) {
+      throw new Error(`Unknown agent: ${agentName}`);
+    }
+    return agent.run(prompt, options);
   }
 
   async routeToClaude(prompt, options = {}) {
-    return this.claude.run(prompt, options);
+    return this.routeTo('claude', prompt, options);
   }
 
   async routeToCodex(prompt, options = {}) {
-    return this.codex.run(prompt, options);
+    return this.routeTo('codex', prompt, options);
   }
 
   async planAndImplement(task, { onPlanData, onImplData, onPhase } = {}) {
@@ -204,19 +213,22 @@ export class Orchestrator {
   }
 
   resetSessions() {
-    this.claude.resetSession();
-    this.codex.resetSession();
+    for (const agent of this._agents.values()) {
+      agent.resetSession();
+    }
   }
 
   getSessions() {
-    return {
-      claude: this.claude.sessionId,
-      codex: this.codex.threadId,
-    };
+    const sessions = {};
+    for (const [name, agent] of this._agents) {
+      sessions[name] = agent.sessionId;
+    }
+    return sessions;
   }
 
   killAll() {
-    this.claude.kill();
-    this.codex.kill();
+    for (const agent of this._agents.values()) {
+      agent.kill();
+    }
   }
 }
